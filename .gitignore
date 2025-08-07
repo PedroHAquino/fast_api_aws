@@ -1,0 +1,10 @@
+# Python
+*.pyc
+__pycache/
+venv/
+
+.vscode/
+
+*.db
+*.sqlite
+pip-log.txt
