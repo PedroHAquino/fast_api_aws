@@ -1,17 +1,18 @@
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Depends, Query 
-from starlette.status import HTTP_204_NO_CONTENT
-from sqlmodel import Field, SQLModel, create_engine, Session, select
 import json
 import boto3
+import os
+from starlette.status import HTTP_204_NO_CONTENT
+from sqlmodel import Field, SQLModel, create_engine, Session, select
 from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="API de CRUD com FastAPI e SQLite", version="0.1.0")
-AWS_EVENTBRIDGE_BUS_NAME = "AWS_EVENTBRIDGE_BUS_NAME"
-AWS_REGION = "AWS_REGION"
+AWS_REGION = os.getenv("AWS_REGION")
+AWS_EVENTBRIDGE_BUS_NAME = os.getenv("AWS_EVENTBRIDGE_BUS_NAME")
 
+app = FastAPI(title="API de CRUD com FastAPI e SQLite", version="0.1.0")
 eventbridge_client = boto3.client("events", region_name=AWS_REGION)
 
 class ItemBase(SQLModel):
