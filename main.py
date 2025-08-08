@@ -4,10 +4,13 @@ from starlette.status import HTTP_204_NO_CONTENT
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 import json
 import boto3
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="API de CRUD com FastAPI e SQLite", version="0.1.0")
-AWS_EVENTBRIDGE_BUS_NAME = "arn:aws:events:us-east-1:356892335868:event-bus/default"
-AWS_REGION = "us-east-1"
+AWS_EVENTBRIDGE_BUS_NAME = "AWS_EVENTBRIDGE_BUS_NAME"
+AWS_REGION = "AWS_REGION"
 
 eventbridge_client = boto3.client("events", region_name=AWS_REGION)
 
