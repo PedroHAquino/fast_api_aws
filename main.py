@@ -53,10 +53,7 @@ class ItemUpdate(SQLModel):
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-# Cria o "motor" do banco de dados (engine).
-# `echo=True` mostra os comandos SQL gerados no terminal (útil para depuração).
 engine = create_engine(sqlite_url, echo=True)
-
 def create_db_and_tables():
     """
     Cria as tabelas no banco de dados com base nos modelos SQLModel.
@@ -64,10 +61,6 @@ def create_db_and_tables():
     """
     SQLModel.metadata.create_all(engine)
 
-# --- 4. Dependência para a Sessão do Banco de Dados ---
-# Isso é um "dependency injection" do FastAPI.
-# Para cada requisição, ele vai criar uma nova sessão de banco de dados,
-# usá-la e garantir que ela seja fechada no final.
 
 def get_session():
     """
@@ -77,10 +70,6 @@ def get_session():
     with Session(engine) as session:
         yield session
 
-# --- 5. Evento de Inicialização (Startup Event) ---
-# FastAPI tem eventos de ciclo de vida. O `on_event("startup")`
-# garante que nossa função `create_db_and_tables` seja chamada
-# assim que a aplicação iniciar, criando o arquivo do DB e as tabelas.
 
 @app.on_event("startup")
 def on_startup():
@@ -90,7 +79,6 @@ def on_startup():
     """
     create_db_and_tables()
 
-# --- 6. Rotas (Endpoints da API) ---
 
 @app.get("/")
 async def read_root():
@@ -107,10 +95,10 @@ def create_item(*, item: ItemCreate, session: Session = Depends(get_session)):
     - Adiciona o item à sessão e o commit para o banco de dados.
     - Retorna o item criado (agora com ID).
     """
-    db_item = Item.model_validate(item) # Converte ItemCreate para Item
+    db_item = Item.model_validate(item)
     session.add(db_item)
-    session.commit() # Salva no banco de dados
-    session.refresh(db_item) # Atualiza o objeto com o ID gerado pelo DB
+    session.commit()
+    session.refresh(db_item)
     send_event_to_eventbridge("ItemCreated", db_item.model_dump())
 
     return db_item
@@ -119,7 +107,7 @@ def create_item(*, item: ItemCreate, session: Session = Depends(get_session)):
 @app.get("/items/", response_model=List[Item])
 def read_items(
     offset: int = 0,
-    limit: int = Query(default=100, le=100), # <-- Mude Field para Query aqui!
+    limit: int = Query(default=100, le=100),
     session: Session = Depends(get_session)
 ):
     """
@@ -153,14 +141,13 @@ def update_item(*, item_id: int, item: ItemUpdate, session: Session = Depends(ge
     if not db_item:
         raise HTTPException(status_code=404, detail="Item não encontrado")
 
-    # Atualiza apenas os campos que foram fornecidos na requisição
-    item_data = item.model_dump(exclude_unset=True) # exclude_unset=True ignora campos não fornecidos
+    item_data = item.model_dump(exclude_unset=True)
     for key, value in item_data.items():
         setattr(db_item, key, value)
 
-    session.add(db_item) # Adiciona o item modificado de volta à sessão
-    session.commit() # Salva as alterações no banco de dados
-    session.refresh(db_item) # Atualiza o objeto Python com os dados do DB
+    session.add(db_item)
+    session.commit()
+    session.refresh(db_item)
 
     send_event_to_eventbridge("ItemUpdated", db_item.model_dump())   
 
@@ -179,10 +166,9 @@ def delete_item(*, item_id: int, session: Session = Depends(get_session)):
     
     send_event_to_eventbridge("ItemDeleted", item.model_dump())   
 
-    session.delete(item) # Marca o item para exclusão
-    session.commit() # Executa a exclusão no banco de dados
-    # Não há retorno de item para 204 No Content
-
+    session.delete(item)
+    session.commit()
+    
 
 def send_event_to_eventbridge(detail_type: str, item_data:dict):
     """Envia o evento para aws"""
